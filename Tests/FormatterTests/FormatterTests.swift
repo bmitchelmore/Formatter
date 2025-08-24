@@ -13,6 +13,7 @@ extension Info: Formattable {
         switch field {
         case "title": \.title
         case "count": \.count.description
+        case "title.count": \.title.count.description
         default: nil
         }
     }
@@ -55,6 +56,11 @@ let info = Info(
 @Test func escapedDollarSign() throws {
     let formatter = try buildFormatter(with: #"\$hello $title $ something $"#)
     #expect(formatter(info) == "$hello hello $ something $", "Format should match")
+}
+
+@Test func propertyWithDot() throws {
+    let formatter = try buildFormatter(with: "$title.count")
+    #expect(formatter(info) == "5", "Format should match")
 }
 
 @Test func emptyProperty() throws {

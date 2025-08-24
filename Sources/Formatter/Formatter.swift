@@ -16,7 +16,7 @@ public enum FormatError: Error, Equatable {
 extension Character {
     fileprivate var isFormatTag: Bool {
         switch self {
-        case "A"..."Z", "a"..."z", "_", "|":
+        case "A"..."Z", "a"..."z", "_", "|", ".":
             true
         default:
             false
