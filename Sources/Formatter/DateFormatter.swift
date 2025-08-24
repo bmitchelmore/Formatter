@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol DateFormatter: Sendable {
+protocol DateFormatter {
     func string(from date: Date) -> String
 }
 

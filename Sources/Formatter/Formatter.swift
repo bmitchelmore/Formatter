@@ -27,7 +27,7 @@ extension Character {
 public typealias FormattingRenderer<I> = (I) -> String
 public typealias FormattingExtractor<I, V> = (I) -> V
 
-public protocol Formattable: Sendable {
+public protocol Formattable {
     static func extractor(for field: String) -> FormattingExtractor<Self, String>?
     static func extractor(for field: String) -> FormattingExtractor<Self, Int>?
     static func extractor(for field: String) -> FormattingExtractor<Self, Date>?

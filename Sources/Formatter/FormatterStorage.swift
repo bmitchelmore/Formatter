@@ -8,18 +8,18 @@
 import Foundation
 import os
 
-final class FormatterStorage<T: Sendable>: @unchecked Sendable {
+final class FormatterStorage<T>: @unchecked Sendable {
     private let lock: OSAllocatedUnfairLock<[String?:T]>
     private let builder: (String?) -> T
     
     init(builder: @escaping (String?) -> T) {
-        self.lock = OSAllocatedUnfairLock(initialState: [:])
+        self.lock = OSAllocatedUnfairLock(uncheckedState: [:])
         self.builder = builder
     }
     
     subscript(_ identifier: String?) -> T {
         get {
-            lock.withLock { formatters in
+            lock.withLockUnchecked { formatters in
                 if let formatter = formatters[identifier] {
                     return formatter
                 } else {
