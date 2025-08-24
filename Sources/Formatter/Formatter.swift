@@ -24,8 +24,8 @@ extension Character {
     }
 }
 
-public typealias FormattingRenderer<I> = @Sendable (I) -> String
-public typealias FormattingExtractor<I, V> = @Sendable (I) -> V
+public typealias FormattingRenderer<I> = (I) -> String
+public typealias FormattingExtractor<I, V> = (I) -> V
 
 public protocol Formattable: Sendable {
     static func extractor(for field: String) -> FormattingExtractor<Self, String>?
@@ -84,7 +84,7 @@ private func anyExtractor<F: Formattable>(for field: String, with qualifier: Str
     }
 }
 
-func extractor<F: Formattable>(for property: String) throws(FormatError) -> @Sendable (F) -> String {
+func extractor<F: Formattable>(for property: String) throws(FormatError) -> (F) -> String {
     let parts = property.split(separator: "|", maxSplits: 1)
     let field: String
     let qualifier: String?
@@ -110,8 +110,8 @@ fileprivate enum ParseState {
     case readingTag(String)
 }
 
-fileprivate enum RenderStep<T: Sendable>: Sendable {
-    case extract(@Sendable (T) -> String)
+fileprivate enum RenderStep<T> {
+    case extract((T) -> String)
     case constant(String)
     
     func render(_ entry: T) -> String {
