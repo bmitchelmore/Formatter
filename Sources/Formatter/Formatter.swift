@@ -36,19 +36,19 @@ public protocol Formattable: Sendable {
 }
 
 extension Formattable {
-    static func extractor(for field: String) -> FormattingExtractor<Self, String>? {
+    public static func extractor(for field: String) -> FormattingExtractor<Self, String>? {
         nil
     }
-    static func extractor(for field: String) -> FormattingExtractor<Self, Int>? {
+    public static func extractor(for field: String) -> FormattingExtractor<Self, Int>? {
         nil
     }
-    static func extractor(for field: String) -> FormattingExtractor<Self, Date>? {
+    public static func extractor(for field: String) -> FormattingExtractor<Self, Date>? {
         nil
     }
-    static func extractor(for field: String) -> FormattingExtractor<Self, Float>? {
+    public static func extractor(for field: String) -> FormattingExtractor<Self, Float>? {
         nil
     }
-    static func extractor(for field: String) -> FormattingExtractor<Self, Double>? {
+    public static func extractor(for field: String) -> FormattingExtractor<Self, Double>? {
         nil
     }
 }
