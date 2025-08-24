@@ -36,19 +36,19 @@ let info = Info(
 )
 
 @Test func simpleFormat() async throws {
-    let formatter = try buildFormatter(with: "$date|y: $title ($count)")
+    let formatter = try buildFormatter(with: "$date[y]: $title ($count)")
     
     #expect(formatter(info) == "1: hello (5)", "Format should match")
 }
 
 @Test func doubleDollarSign() throws {
-    let formatter = try buildFormatter(with: "$$date|y $title")
+    let formatter = try buildFormatter(with: "$$date[y] $title")
     
     #expect(formatter(info) == "$1 hello", "Format should match")
 }
 
 @Test func isolatedDollarSign() throws {
-    let formatter = try buildFormatter(with: "$date|y$ $title")
+    let formatter = try buildFormatter(with: "$date[y]$ $title")
     
     #expect(formatter(info) == "1$ hello", "Format should match")
 }
@@ -56,6 +56,11 @@ let info = Info(
 @Test func escapedDollarSign() throws {
     let formatter = try buildFormatter(with: #"\$hello $title $ something $"#)
     #expect(formatter(info) == "$hello hello $ something $", "Format should match")
+}
+
+@Test func funkyQualifiers() throws {
+    let formatter = try buildFormatter(with: #"$title[the best part of waking up is $5 in your pocket] $title $ [ $[ ] $] something $"#)
+    #expect(formatter(info) == "hello hello $ [ $[ ] $] something $", "Format should match")
 }
 
 @Test func propertyWithDot() throws {
