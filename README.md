@@ -29,6 +29,7 @@ extension Info: Formattable {
     }
 }
 
-let formatter: Formatter<Info> = BuildFormatter(with: "{{date}}: {{title}} ({{count}})")
+let formatter: Formatter<Info> = BuildFormatter(for: Info.self, with: "$date: $title ($count)")
+
 
 ```

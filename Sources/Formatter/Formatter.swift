@@ -8,9 +8,20 @@
 import Foundation
 import os
 
-enum FormatError: Error, Equatable {
+public enum FormatError: Error, Equatable {
     case invalidFormat
     case unknownField(String)
+}
+
+extension Character {
+    fileprivate var isFormatTag: Bool {
+        switch self {
+        case "A"..."Z", "a"..."z", "_", "|":
+            true
+        default:
+            false
+        }
+    }
 }
 
 public typealias FormattingRenderer<I> = @Sendable (I) -> String
@@ -73,7 +84,7 @@ private func anyExtractor<F: Formattable>(for field: String, with qualifier: Str
     }
 }
 
-func extractor<F: Formattable>(for property: String) throws -> @Sendable (F) -> String {
+func extractor<F: Formattable>(for property: String) throws(FormatError) -> @Sendable (F) -> String {
     let parts = property.split(separator: "|", maxSplits: 1)
     let field: String
     let qualifier: String?
@@ -94,9 +105,9 @@ func extractor<F: Formattable>(for property: String) throws -> @Sendable (F) -> 
 
 fileprivate enum ParseState {
     case none
-    case openBrace(Int)
-    case inBrace(String)
-    case closeBrace(String, Int)
+    case escaping(String)
+    case readingConstant(String)
+    case readingTag(String)
 }
 
 fileprivate enum RenderStep<T: Sendable>: Sendable {
@@ -113,59 +124,58 @@ fileprivate enum RenderStep<T: Sendable>: Sendable {
     }
 }
 
-public func BuildFormatter<F: Formattable>(for type: F.Type, with format: String) throws -> FormattingRenderer<F> {
+public func BuildFormatter<F: Formattable>(for type: F.Type, with format: String) throws(FormatError) -> FormattingRenderer<F> {
     var steps: [RenderStep<F>] = []
     var state: ParseState = .none
+    let escape: Character = "\\"
+    let prefix: Character = "$"
     for c in format {
         switch (c, state) {
-        case ("{", .none):
-            state = .openBrace(1)
-        case ("{", .openBrace(1)):
-            state = .openBrace(2)
-        case ("{", .openBrace(2)):
-            steps.append(.constant("{"))
-            state = .openBrace(2)
-        case ("{", .inBrace(let string)):
-            steps.append(.constant("{{\(string){"))
-            state = .none
-        case ("{", .closeBrace(let string, let count)):
-            steps.append(.constant("{{\(string)\(String(repeating: "}", count: count))"))
-            state = .none
-        case ("}", .none):
-            steps.append(.constant("}"))
-        case ("}", .openBrace(2)):
-            throw FormatError.invalidFormat
-        case ("}", .inBrace(let s)):
-            state = .closeBrace(s, 1)
-        case ("}", .closeBrace(let s, 1)):
-            let extractor: @Sendable (F) -> String = try extractor(for: s)
-            steps.append(.extract(extractor))
-            state = .none
-        case ("}", _):
-            throw FormatError.invalidFormat
-        case (_, .openBrace(2)):
-            state = .inBrace(String(c))
-        case (_, .inBrace(let s)):
-            state = .inBrace(s + String(c))
+        case (_, .escaping(let content)):
+            state = .readingConstant(content.appending(String(c)))
+        case (escape, .none):
+            state = .escaping("")
+        case (escape, .readingConstant(let content)):
+            state = .escaping(content)
+        case (escape, .readingTag(let field)):
+            try steps.append(.extract(extractor(for: field)))
+            state = .escaping("")
+        case (prefix, .none):
+            state = .readingTag("")
+        case (prefix, .readingTag("")):
+            steps.append(.constant(String(prefix)))
+            state = .readingTag("")
+        case (prefix, .readingTag(let field)):
+            try steps.append(.extract(extractor(for: field)))
+            state = .readingTag("")
+        case (prefix, .readingConstant(let value)):
+            steps.append(.constant(value))
+            state = .readingTag("")
+        case (_, .readingTag("")) where !c.isFormatTag:
+            steps.append(.constant(String(prefix)))
+            state = .readingConstant(String(c))
+        case (_, .readingTag(let field)) where !c.isFormatTag:
+            try steps.append(.extract(extractor(for: field)))
+            state = .readingConstant(String(c))
         case (_, .none):
-            steps.append(.constant(String(c)))
-        case (_, .openBrace(1)):
-            steps.append(.constant("{\(c)"))
-            state = .none
-        default:
-            print("Invalid state: \(c) \(state)")
-            throw FormatError.invalidFormat
+            state = .readingConstant(String(c))
+        case (_, .readingTag(let field)):
+            state = .readingTag(field.appending(String(c)))
+        case (_, .readingConstant(let value)):
+            state = .readingConstant(value.appending(String(c)))
         }
     }
     switch state {
     case .none:
         break
-    case .openBrace(let count):
-        steps.append(.constant(String(repeating: "{", count: count)))
-    case .inBrace(let string):
-        steps.append(.constant("{{\(string)"))
-    case .closeBrace(let string, let count):
-        steps.append(.constant("{{\(string)\(String(repeating: "}", count: count))"))
+    case .escaping(let content):
+        steps.append(.constant(content))
+    case .readingConstant(let content):
+        steps.append(.constant(content))
+    case .readingTag(""):
+        steps.append(.constant(String(prefix)))
+    case .readingTag(let field):
+        try steps.append(.extract(extractor(for: field)))
     }
     return { [steps] entry in
         var formatted = ""

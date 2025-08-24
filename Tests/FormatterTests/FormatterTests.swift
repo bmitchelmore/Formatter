@@ -35,45 +35,41 @@ let info = Info(
 )
 
 @Test func simpleFormat() async throws {
-    let formatter = try buildFormatter(with: "{{date|y}}: {{title}} ({{count}})")
+    let formatter = try buildFormatter(with: "$date|y: $title ($count)")
     
     #expect(formatter(info) == "1: hello (5)", "Format should match")
 }
 
-@Test func extraBraceEarly() throws {
-    let formatter = try buildFormatter(with: "{{{date|y}} {{title}}")
+@Test func doubleDollarSign() throws {
+    let formatter = try buildFormatter(with: "$$date|y $title")
     
-    #expect(formatter(info) == "{1 hello", "Format should match")
+    #expect(formatter(info) == "$1 hello", "Format should match")
 }
 
-@Test func extraBraceLate() throws {
-    let formatter = try buildFormatter(with: "{{date|y}}} {{title}}")
+@Test func isolatedDollarSign() throws {
+    let formatter = try buildFormatter(with: "$date|y$ $title")
     
-    #expect(formatter(info) == "1} hello", "Format should match")
+    #expect(formatter(info) == "1$ hello", "Format should match")
 }
 
-@Test func singleBrace() throws {
-    let formatter = try buildFormatter(with: "{date} {{title}}")
-    #expect(formatter(info) == "{date} hello", "Format should match")
-}
-
-@Test func extraCurlyBraces() throws {
-    let formatter = try buildFormatter(with: "{hello} {{title}} } something {")
-    #expect(formatter(info) == "{hello} hello } something {", "Format should match")
+@Test func escapedDollarSign() throws {
+    let formatter = try buildFormatter(with: #"\$hello $title $ something $"#)
+    #expect(formatter(info) == "$hello hello $ something $", "Format should match")
 }
 
 @Test func emptyProperty() throws {
-    do {
-        _ = try buildFormatter(with: "{{}}")
-    } catch FormatError.invalidFormat {
-        
-    }
+    let formatter = try buildFormatter(with: "$")
+    #expect(formatter(info) == "$", "Format should match")
 }
 
+@Test func invalidProperty() throws {
+    let formatter = try buildFormatter(with: "$1")
+    #expect(formatter(info) == "$1", "Format should match")
+}
 
 @Test func unknownProperty() throws {
     do {
-        _ = try buildFormatter(with: "{{jumbo}}")
+        _ = try buildFormatter(with: "$jumbo")
     } catch FormatError.unknownField("jumbo") {
         
     }
